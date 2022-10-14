@@ -1,7 +1,7 @@
 package com.srs.rental.grpc.server;
 
-import com.market.common.OnlyCodeResponse;
-import com.market.common.PageResponse;
+import com.srs.common.OnlyCodeResponse;
+import com.srs.common.PageResponse;
 import com.srs.proto.intercepter.AuthGrpcInterceptor;
 import com.srs.proto.provider.GrpcPrincipalProvider;
 import com.srs.proto.util.GrpcExceptionUtil;

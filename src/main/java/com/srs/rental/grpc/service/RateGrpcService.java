@@ -1,7 +1,7 @@
 package com.srs.rental.grpc.service;
 
-import com.market.common.OnlyCodeResponse;
-import com.market.common.PageResponse;
+import com.srs.common.OnlyCodeResponse;
+import com.srs.common.PageResponse;
 import com.srs.proto.dto.GrpcPrincipal;
 import com.srs.rental.GetRateRequest;
 import com.srs.rental.GetRateResponse;

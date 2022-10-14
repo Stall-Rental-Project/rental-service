@@ -61,7 +61,7 @@ public class RateGrpcMapper {
         }
 
         return StallRightsRate.newBuilder()
-                .addAllClassRightsAmount(classAmounts)
+                .addAllClassRightsAmounts(classAmounts)
                 .build();
     }
 

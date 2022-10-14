@@ -1,9 +1,9 @@
 package com.srs.rental.util.validator.impl;
 
-import com.market.common.Error;
-import com.market.common.NoContentResponse;
-import com.market.common.Status;
-import com.market.market.MarketClass;
+import com.srs.common.Error;
+import com.srs.common.NoContentResponse;
+import com.srs.common.Status;
+import com.srs.market.MarketClass;
 import com.srs.proto.dto.GrpcPrincipal;
 import com.srs.rental.OtherRateDetail;
 import com.srs.rental.RateType;
@@ -86,8 +86,8 @@ public class RateValidatorImpl extends BaseValidator implements RateValidator {
                 case STALL_RIGHTS_RATE:
                     if (!request.hasRightsRate()) {
                         error.putDetails("rights_rate", "Right rate is required");
-                    } else if (request.getRightsRate().getClassRightsAmountCount() == 0
-                            || request.getRightsRate().getClassRightsAmountList().stream()
+                    } else if (request.getRightsRate().getClassRightsAmountsCount() == 0
+                            || request.getRightsRate().getClassRightsAmountsList().stream()
                             .anyMatch(ca -> ca.getAmount() <= 0
                                     || ca.getClazz().equals(MarketClass.UNRECOGNIZED))) {
                         error.putDetails("rights_rate", "Invalid value");

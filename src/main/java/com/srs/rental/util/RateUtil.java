@@ -61,7 +61,7 @@ public class RateUtil {
     private String grpcToNativeRightsRate(StallRightsRate grpc) {
         var content = new StringBuilder();
 
-        for (var classAmount : grpc.getClassRightsAmountList()) {
+        for (var classAmount : grpc.getClassRightsAmountsList()) {
             if (content.length() > 0) {
                 content.append(ELEMENT_SEP);
             }

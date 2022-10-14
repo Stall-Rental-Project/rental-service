@@ -1,8 +1,8 @@
 package com.srs.rental.util.validator;
 
-import com.market.common.Error;
-import com.market.common.ErrorCode;
-import com.market.common.NoContentResponse;
+import com.srs.common.Error;
+import com.srs.common.ErrorCode;
+import com.srs.common.NoContentResponse;
 
 
 public abstract class BaseValidator {

@@ -1,6 +1,6 @@
 package com.srs.rental.repository;
 
-import com.market.common.Status;
+import com.srs.common.Status;
 import com.querydsl.core.types.Order;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.CaseBuilder;
@@ -19,16 +19,13 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
-import java.util.UUID;
-
 import static com.srs.rental.OtherRateDetail.*;
 import static com.srs.rental.RateType.*;
 
 @Repository
 @RequiredArgsConstructor
 public class RateDslRepository {
-    private final QRateEntity rate=QRateEntity.rateEntity;
+    private final QRateEntity rate = QRateEntity.rateEntity;
     private final JPAQueryFactory queryFactory;
 
     public Page<RateEntity> findAll(ListRatesRequest request, GrpcPrincipal principal) {
