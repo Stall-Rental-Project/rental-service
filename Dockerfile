@@ -5,6 +5,6 @@ WORKDIR /app
 
 COPY /target/rental-service.jar rental-service.jar
 
-ENTRYPOINT ["java", "-jar", "rental-service.jar"]
+ENTRYPOINT ["java","-Dspring.profiles.active=dev", "-jar", "rental-service.jar"]
 
-EXPOSE 6567
+EXPOSE 9567
