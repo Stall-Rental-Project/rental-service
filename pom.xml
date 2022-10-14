@@ -20,6 +20,15 @@
         <proto.version>DEFECT-SNAPSHOT</proto.version>
         <common.version>DEFECT-SNAPSHOT</common.version>
     </properties>
+
+    <repositories>
+        <repository>
+            <id>my-repo</id>
+            <name>My Repository</name>
+            <url>file://root/.m2/repository/</url>
+        </repository>
+    </repositories>
+
     <dependencies>
         <dependency>
             <groupId>org.projectlombok</groupId>
