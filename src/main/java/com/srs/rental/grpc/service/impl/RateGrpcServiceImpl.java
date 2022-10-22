@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Objects;
+import java.util.UUID;
 
 @Service
 @Log4j2
@@ -65,8 +66,8 @@ public class RateGrpcServiceImpl implements RateGrpcService {
     @Override
     public GetRateResponse getRate(GetRateRequest request, GrpcPrincipal principal) {
 
-        var rateCode = request.getRateCode();
-        var rate = rateRepository.findByRateCode(rateCode).orElseThrow(
+        var rateCode = UUID.fromString(request.getRateCode());
+        var rate = rateRepository.findById(rateCode).orElseThrow(
                 () -> new ObjectNotFoundException("Rate not found")
         );
         return GetRateResponse.newBuilder()
