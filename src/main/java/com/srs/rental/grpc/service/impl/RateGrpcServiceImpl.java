@@ -120,8 +120,8 @@ public class RateGrpcServiceImpl implements RateGrpcService {
                     .build();
         }
 
-        var rateCode = request.getRateCode();
-        var rate = rateRepository.findByRateCode(rateCode).orElseThrow(
+        var rateCode = UUID.fromString(request.getRateCode());
+        var rate = rateRepository.findById(rateCode).orElseThrow(
                 () -> new ObjectNotFoundException("Rate not found")
         );
 
@@ -132,7 +132,7 @@ public class RateGrpcServiceImpl implements RateGrpcService {
         return OnlyCodeResponse.newBuilder()
                 .setSuccess(true)
                 .setData(OnlyCodeResponse.Data.newBuilder()
-                        .setCode(rateCode)
+                        .setCode(rate.getRateCode())
                         .build())
                 .build();
     }
