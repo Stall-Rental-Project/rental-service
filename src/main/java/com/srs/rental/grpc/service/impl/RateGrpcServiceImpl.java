@@ -1,6 +1,8 @@
 package com.srs.rental.grpc.service.impl;
 
 import com.google.protobuf.Any;
+import com.srs.common.FindByIdRequest;
+import com.srs.common.NoContentResponse;
 import com.srs.common.OnlyCodeResponse;
 import com.srs.common.PageResponse;
 import com.srs.common.exception.ObjectNotFoundException;
@@ -120,8 +122,8 @@ public class RateGrpcServiceImpl implements RateGrpcService {
                     .build();
         }
 
-        var rateCode = UUID.fromString(request.getRateCode());
-        var rate = rateRepository.findById(rateCode).orElseThrow(
+        var rateId = UUID.fromString(request.getRateId());
+        var rate = rateRepository.findById(rateId).orElseThrow(
                 () -> new ObjectNotFoundException("Rate not found")
         );
 
@@ -137,6 +139,19 @@ public class RateGrpcServiceImpl implements RateGrpcService {
                 .build();
     }
 
+    @Override
+    @Transactional
+    public NoContentResponse deleteRate(FindByIdRequest request, GrpcPrincipal principal) {
+        var rateId = UUID.fromString(request.getId());
+        var rate = rateRepository.findById(rateId).orElseThrow(
+                () -> new ObjectNotFoundException("Rate not found")
+        );
+
+        rateRepository.delete(rate);
+        return NoContentResponse.newBuilder()
+                .setSuccess(true)
+                .build();
+    }
 
     private void updateRateDetail(RateEntity rate, UpsertRateRequest request) {
         if (request.getType().equals(RateType.OTHER_RATES)) {

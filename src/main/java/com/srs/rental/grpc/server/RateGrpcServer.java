@@ -1,5 +1,7 @@
 package com.srs.rental.grpc.server;
 
+import com.srs.common.FindByIdRequest;
+import com.srs.common.NoContentResponse;
 import com.srs.common.OnlyCodeResponse;
 import com.srs.common.PageResponse;
 import com.srs.proto.intercepter.AuthGrpcInterceptor;
@@ -81,5 +83,20 @@ public class RateGrpcServer extends RateServiceGrpc.RateServiceImplBase {
             throw e;
         }
     }
+
+    @Override
+    public void deleteRate(FindByIdRequest request, StreamObserver<NoContentResponse> responseObserver) {
+        try {
+            var principal = GrpcPrincipalProvider.getGrpcPrincipal();
+            responseObserver.onNext(rateGrpcService.deleteRate(request, principal));
+            responseObserver.onCompleted();
+        } catch (Exception e) {
+            responseObserver.onNext(NoContentResponse.newBuilder()
+                    .setSuccess(false)
+                    .setError(GrpcExceptionUtil.asGrpcError(e))
+                    .build());
+            responseObserver.onCompleted();
+            throw e;
+        }    }
 
 }

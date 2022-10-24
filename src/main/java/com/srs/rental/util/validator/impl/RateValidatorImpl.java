@@ -42,10 +42,6 @@ public class RateValidatorImpl extends BaseValidator implements RateValidator {
 
         this.validateRateRequest(request, error);
 
-        if (StringUtils.isBlank(request.getRateCode())) {
-            error.putDetails("rate_code", "Rate code is required");
-        }
-
         if (error.getDetailsCount() == 0 && request.getStatus().equals(Status.ACTIVE)) {
             if (rateDslRepository.existsActiveRateByType(request.getType(), request.getOtherRate().getDetail(), request.getRateCode())) {
                 error.putDetails("type", "Rate already exists");
