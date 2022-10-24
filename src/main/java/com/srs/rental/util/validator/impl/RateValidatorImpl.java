@@ -1,6 +1,7 @@
 package com.srs.rental.util.validator.impl;
 
 import com.srs.common.Error;
+import com.srs.common.ErrorCode;
 import com.srs.common.NoContentResponse;
 import com.srs.common.Status;
 import com.srs.market.MarketClass;
@@ -29,7 +30,7 @@ public class RateValidatorImpl extends BaseValidator implements RateValidator {
 
         if (error.getDetailsCount() == 0 && request.getStatus().equals(Status.ACTIVE)) {
             if (rateDslRepository.existsActiveRateByType(request.getType(), request.getOtherRate().getDetail(), null)) {
-                error.putDetails("type", "Rate already exists");
+                error.setCode(ErrorCode.RATE_ALREADY_EXISTS).putDetails("type", "Rate already exists");
             }
         }
 
@@ -44,7 +45,7 @@ public class RateValidatorImpl extends BaseValidator implements RateValidator {
 
         if (error.getDetailsCount() == 0 && request.getStatus().equals(Status.ACTIVE)) {
             if (rateDslRepository.existsActiveRateByType(request.getType(), request.getOtherRate().getDetail(), request.getRateCode())) {
-                error.putDetails("type", "Rate already exists");
+                error.setCode(ErrorCode.RATE_ALREADY_EXISTS).putDetails("type", "Rate already exists");
             }
         }
 
