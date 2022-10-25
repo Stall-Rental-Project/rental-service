@@ -13,7 +13,6 @@ import com.srs.rental.repository.RateDslRepository;
 import com.srs.rental.util.validator.BaseValidator;
 import com.srs.rental.util.validator.RateValidator;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
 
