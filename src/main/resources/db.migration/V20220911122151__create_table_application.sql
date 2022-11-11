@@ -1,0 +1,48 @@
+set search_path to mhmarket;
+
+create table application
+(
+    application_id                 uuid primary key      default gen_random_uuid(),
+    owner_id                       uuid         not null,
+    market_code                    varchar(256) not null,
+    stall_code                     varchar(256) not null,
+    floor_code                     varchar(256) not null,
+    status                         integer      not null,
+    code                           varchar(256) not null,
+    type                           integer,
+    created_by                     varchar(255)         not null,
+    created_at                     timestamptz  not null,
+    updated_at                     timestamptz  not null,
+    owned_any_stall                boolean      not null default false,
+    owned_stall_info               varchar(255),
+    pay_tax_previous               boolean      not null default false,
+    pay_tax_previous_reason        text,
+    forced_terminate_previous      boolean      not null default false,
+    forced_terminate_reason        text,
+    exchange_rent_stall            boolean      not null default false,
+    exchange_rent_stall_name       varchar(255),
+    convicted_violate_law          boolean      not null default false,
+    convicted_violate_law_reason   text,
+    administrative_criminal        boolean      not null default false,
+    administrative_criminal_reason text,
+    capital                        text,
+    source_of_capital              text,
+    item_type                      text,
+    proof_of_residency             text,
+    birth_certificate              text,
+    picture                        text,
+    identification                 text,
+    payment_method                 integer,
+    proof_of_transfer              text,
+    market_type                    integer,
+    market_class                   integer,
+    lease_code                     varchar(255),
+    lease_status                   integer,
+    lease_start_date               timestamptz,
+    lease_end_date                 timestamptz,
+    paid_initial_fee               double precision,
+    approved_date                  timestamptz,
+    date_paid                      timestamptz
+);
+alter table application
+    add constraint application_users_fk foreign key (owner_id) references users (user_id) on delete cascade on update cascade;

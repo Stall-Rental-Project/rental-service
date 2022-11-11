@@ -8,6 +8,7 @@ import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.srs.common.domain.Page;
 import com.srs.proto.dto.GrpcPrincipal;
+import com.srs.rental.ApplicationType;
 import com.srs.rental.ListRatesRequest;
 import com.srs.rental.OtherRateDetail;
 import com.srs.rental.RateType;
@@ -18,6 +19,8 @@ import com.srs.rental.grpc.util.PageUtil;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Repository;
+
+import java.util.Optional;
 
 import static com.srs.rental.OtherRateDetail.*;
 import static com.srs.rental.RateType.*;
@@ -96,4 +99,26 @@ public class RateDslRepository {
 
         return query.fetchFirst() > 0;
     }
+
+    public Optional<RateEntity> findRateByApplicationType(ApplicationType type) {
+        JPAQuery<RateEntity> query = queryFactory.select(rate)
+                .from(rate)
+                .where(rate.status.eq(Status.ACTIVE_VALUE));
+        switch (type) {
+            case NEW_STALL_APP:
+                query.where(rate.type.eq(OTHER_RATES_VALUE))
+                        .where(rate.otherRateType.eq(NEW_STALL_APPLICATION_FEE_VALUE));
+                break;
+            case RENEWAL_STALL_APP:
+                query.where(rate.type.eq(OTHER_RATES_VALUE))
+                        .where(rate.otherRateType.eq(RENEWAL_STALL_APPLICATION_FEE_VALUE));
+                break;
+            default:
+                throw new UnsupportedOperationException(
+                        "Application of type " + type + " currently not supported");
+        }
+
+        return Optional.ofNullable(query.fetchFirst());
+    }
+
 }

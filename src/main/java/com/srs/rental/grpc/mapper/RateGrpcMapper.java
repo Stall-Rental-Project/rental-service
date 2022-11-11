@@ -109,4 +109,9 @@ public class RateGrpcMapper {
 
         return builder;
     }
+
+    public Rate entityToGrpcResponse(RateEntity entity) {
+        return entityToGrpcBuilder(entity)
+                .build();
+    }
 }

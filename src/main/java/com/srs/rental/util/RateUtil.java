@@ -1,5 +1,9 @@
 package com.srs.rental.util;
 
+import com.fasterxml.jackson.core.io.NumberInput;
+import com.srs.common.util.NumericUtil;
+import com.srs.market.MarketClass;
+import com.srs.market.StallClass;
 import com.srs.rental.*;
 import com.srs.rental.grpc.mapper.RateGrpcMapper;
 import com.srs.rental.repository.RateDslRepository;
@@ -75,5 +79,63 @@ public class RateUtil {
     private String grpcToNativeSecurityBond(StallSecurityBond grpc) {
         return String.format("%f%s%f", grpc.getRentalFee(), COMPONENT_SEP, grpc.getAmount());
     }
+
+    public double getInitialRate(ApplicationType applicationType) {
+        var rate = rateDslRepository.findRateByApplicationType(applicationType).orElse(null);
+
+        if (rate == null) {
+            log.warn("Initial rate not found. It might be inactive or unapproved");
+            return 0;
+        }
+
+        var grpcRate = rateGrpcMapper.entityToGrpcResponse(rate);
+
+        return NumericUtil.sanitize(grpcRate.getOtherRate().getAmount());
+    }
+
+    public double getMonthlyRate(MarketClass marketClass, StallClass stallClass, double stallArea) {
+        var stallRentalRate = this.getStallRentalRate(marketClass, stallClass);
+        return this.getMonthlyRate(stallRentalRate, stallArea);
+    }
+
+    public double getMonthlyRate(double stallRentalRate, double stallArea) {
+        return NumericUtil.sanitize(stallRentalRate * stallArea);
+    }
+
+    public double getStallRentalRate(MarketClass marketClass, StallClass stallClass) {
+        var rate = rateRepository.findInUseRateByType(RateType.STALL_RENTAL_RATE_VALUE).orElse(null);
+
+        if (rate == null) {
+            log.warn("Stall rental feed not found. It might be inactive or unapproved");
+            return 0;
+        }
+
+        var grpcRate = rateGrpcMapper.entityToGrpcResponse(rate);
+
+        double stallLocationAddon;
+        switch (stallClass) {
+            case STALL_CLASS_FRONT:
+                stallLocationAddon = 15 / 100;
+                break;
+            case STALL_CLASS_INSIDE_CORNER:
+                stallLocationAddon = 10 / 100;
+                break;
+            case STALL_CLASS_FRONT_CORNER:
+                stallLocationAddon = 25 / 100;
+                break;
+            default:
+                log.warn("Stall addon not found for location " + stallClass);
+                stallLocationAddon = 0;
+        }
+
+        double stallRate = grpcRate.getRentalRate().getClassRentalAmountsList().stream()
+                .filter(item -> item.getClazz().equals(marketClass))
+                .map(ClassAmountRate::getAmount)
+                .mapToDouble(amount -> amount)
+                .sum();
+
+        return NumericUtil.sanitize(stallRate * (1 + stallLocationAddon));
+    }
+
 
 }
