@@ -1,17 +1,12 @@
 package com.srs.rental.grpc.service.impl;
 
+import com.srs.common.*;
 import com.srs.common.Error;
-import com.srs.common.ErrorCode;
-import com.srs.common.FindByIdRequest;
-import com.srs.common.NoContentResponse;
 import com.srs.common.exception.AccessDeniedException;
 import com.srs.common.exception.ObjectNotFoundException;
 import com.srs.common.util.PermissionUtil;
 import com.srs.proto.dto.GrpcPrincipal;
-import com.srs.rental.ApplicationType;
-import com.srs.rental.GetApplicationResponse;
-import com.srs.rental.SubmitApplicationDocsRequest;
-import com.srs.rental.SubmitApplicationRequest;
+import com.srs.rental.*;
 import com.srs.rental.entity.ApplicationEntity;
 import com.srs.rental.grpc.mapper.ApplicationGrpcMapper;
 import com.srs.rental.grpc.service.NSAGrpcService;
@@ -146,6 +141,31 @@ public class NSAGrpcServiceImpl implements NSAGrpcService {
                             .build())
                     .build();
         }
+    }
+
+    @Override
+    public BooleanResponse checkExistApplication(CheckExistApplicationRequest request) {
+        var builder = BooleanResponse.newBuilder();
+        var validateResult = applicationValidator.validateCheckExistApplication(request);
+        if (!validateResult.getSuccess()) {
+            builder.setErrorResponse(ErrorResponse.newBuilder()
+                    .setErrorCode(validateResult.getError().getCode())
+                    .setErrorDescription(validateResult.getError().getMessage())
+                    .build());
+        } else {
+            boolean result;
+            if (StringUtils.isNotBlank(request.getStallCode())) {
+                result = applicationRepository.existsByMarketCodeAndFloorCodeAndStallCode(request.getMarketCode(), request.getFloorCode(), request.getStallCode());
+            } else if (StringUtils.isNotBlank(request.getFloorCode())) {
+                result = applicationRepository.existsByMarketCodeAndFloorCode(request.getMarketCode(), request.getFloorCode());
+            } else {
+                result = applicationRepository.existsByMarketCode(request.getMarketCode());
+            }
+            builder.setSuccessResponse(BooleanSuccessResponse.newBuilder()
+                    .setResult(result)
+                    .build());
+        }
+        return builder.build();
     }
 
     private UUID storeNSA(SubmitApplicationRequest request, GrpcPrincipal principal) {

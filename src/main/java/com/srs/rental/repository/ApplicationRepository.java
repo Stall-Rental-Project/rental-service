@@ -8,4 +8,10 @@ import java.util.UUID;
 
 @Repository
 public interface ApplicationRepository extends JpaRepository<ApplicationEntity, UUID> {
+    boolean existsByMarketCodeAndFloorCodeAndStallCode(String marketCode, String floorCode, String stallCode);
+
+    boolean existsByMarketCodeAndFloorCode(String marketCode, String floorCode);
+
+    boolean existsByMarketCode(String marketCode);
+
 }

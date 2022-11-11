@@ -1,7 +1,6 @@
 package com.srs.rental.grpc.server;
 
-import com.srs.common.FindByIdRequest;
-import com.srs.common.NoContentResponse;
+import com.srs.common.*;
 import com.srs.proto.intercepter.AuthGrpcInterceptor;
 import com.srs.proto.provider.GrpcPrincipalProvider;
 import com.srs.proto.util.GrpcExceptionUtil;
@@ -79,6 +78,24 @@ public class NSAGrpcServer extends NSAServiceGrpc.NSAServiceImplBase {
             responseObserver.onNext(GetApplicationResponse.newBuilder()
                     .setSuccess(false)
                     .setError(GrpcExceptionUtil.asGrpcError(e))
+                    .build());
+            responseObserver.onCompleted();
+            throw e;
+        }
+    }
+
+    @Override
+    public void checkExistApplication(CheckExistApplicationRequest request, StreamObserver<BooleanResponse> responseObserver) {
+        try {
+            var response = nsaGrpcService.checkExistApplication(request);
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+        } catch (Exception e) {
+            responseObserver.onNext(BooleanResponse.newBuilder()
+                    .setErrorResponse(ErrorResponse.newBuilder()
+                            .setErrorCode(ErrorCode.INTERNAL_SERVER_ERROR)
+                            .setErrorDescription(e.getMessage())
+                            .build())
                     .build());
             responseObserver.onCompleted();
             throw e;
