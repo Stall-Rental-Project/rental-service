@@ -5,16 +5,23 @@ import com.srs.common.*;
 import com.srs.common.exception.AccessDeniedException;
 import com.srs.common.exception.ObjectNotFoundException;
 import com.srs.common.util.PermissionUtil;
+import com.srs.common.util.TimestampUtil;
+import com.srs.market.MarketClass;
+import com.srs.market.StallClass;
+import com.srs.market.StallType;
 import com.srs.proto.dto.GrpcPrincipal;
 import com.srs.rental.*;
 import com.srs.rental.entity.ApplicationEntity;
 import com.srs.rental.grpc.mapper.ApplicationGrpcMapper;
 import com.srs.rental.grpc.service.NSAGrpcService;
+import com.srs.rental.kafka.producer.LeaseKafkaProducer;
 import com.srs.rental.repository.ApplicationRepository;
 import com.srs.rental.repository.MemberRepository;
 import com.srs.rental.repository.NSARepository;
 import com.srs.rental.repository.UserRepository;
 import com.srs.rental.repository.sequence.CodeGeneratorRepository;
+import com.srs.rental.util.LeaseUtil;
+import com.srs.rental.util.RateUtil;
 import com.srs.rental.util.validator.ApplicationValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -41,6 +48,10 @@ public class NSAGrpcServiceImpl implements NSAGrpcService {
     private final TransactionTemplate transactionTemplate;
     private final CodeGeneratorRepository codeGeneratorRepository;
     private final ApplicationGrpcMapper applicationGrpcMapper;
+    private final LeaseUtil leaseUtil;
+    private final RateUtil rateUtil;
+
+    private final LeaseKafkaProducer leaseKafkaProducer;
 
     @Override
     public GetApplicationResponse submitApplication(SubmitApplicationRequest request, GrpcPrincipal principal) {
@@ -177,30 +188,87 @@ public class NSAGrpcServiceImpl implements NSAGrpcService {
         var acceptStatus = List.of(NEW_VALUE, IN_PROGRESS_VALUE, PAYMENT_INFO_REQUESTED_VALUE);
 
         var nsaId = UUID.fromString(request.getApplicationId());
-        var nsa = nsaRepository.findOneById(nsaId)
+        var application = nsaRepository.findOneById(nsaId)
                 .orElseThrow(() -> new ObjectNotFoundException("Application not found"));
 
-        var currentStatus = nsa.getStatus();
-
         if (PermissionUtil.isPublicUser(principal.getRoles()) &&
-                !acceptStatus.contains(nsa.getStatus())) {
+                !acceptStatus.contains(application.getStatus())) {
             throw new AccessDeniedException("Application is being processed");
         }
 
-        boolean hasChanged = this.updateApplicationPayment(nsa, request);
+        this.updateApplicationPayment(application, request);
 
-        if (StringUtils.isBlank(nsa.getCreatedBy().toString()) && PermissionUtil.isPublicUser(principal.getRoles())) {
-            nsa.setCreatedBy(principal.getUserId());
+        if (StringUtils.isBlank(application.getCreatedBy().toString()) && PermissionUtil.isPublicUser(principal.getRoles())) {
+            application.setCreatedBy(principal.getUserId());
         }
 
         if (!request.getDraft()) {
-            nsa.setStatus(FOR_PAYMENT_VERIFICATION_VALUE);
-
+            application.setStatus(FOR_PAYMENT_VERIFICATION_VALUE);
         } else {
-            nsa.setStatus(IN_PROGRESS_VALUE);
-
+            application.setStatus(IN_PROGRESS_VALUE);
         }
 
+        var applicationType = ApplicationType.forNumber(application.getType());
+        var marketClass = MarketClass.forNumber(application.getMarketClass());
+        var stallClass = StallClass.forNumber(application.getStallClass());
+        var stallArea = application.getStallArea();
+        var stallType = StallType.forNumber(application.getStallType());
+
+        // This code block appears here just for backward-compatible purpose.
+        // When migrating from Phase 1A to 2A, some applications might have passed the step 3 without properly initialFee set
+        if (application.getPaidInitialFee() == 0) {
+            var initialFee = rateUtil.getInitialRate(applicationType);
+            application.setPaidInitialFee(initialFee);
+        }
+
+        var monthlyFee = rateUtil.getMonthlyRate(marketClass, stallClass, stallArea);
+        var securityFee = rateUtil.getSecurityRate(monthlyFee, stallType);
+        var totalAmountDue = rateUtil.getTotalAmountDue(securityFee, marketClass, stallType);
+        application.setPaidSecurityFee(securityFee);
+        application.setPaidTotalAmountDue(totalAmountDue);
+        application.setPaymentMethod(request.getPaymentMethodValue());
+        application.setPaymentStatus(PaymentStatus.P_FOR_PAYMENT_VERIFICATION_VALUE);
+        application.setDatePaid(TimestampUtil.now());
+        applicationRepository.save(application);
+
+        return NoContentResponse.newBuilder()
+                .setSuccess(true)
+                .build();
+    }
+
+    @Override
+    public NoContentResponse confirmApplication(ConfirmApplicationRequest request, GrpcPrincipal principal) {
+        var acceptStatus = List.of(FOR_PAYMENT_VERIFICATION_VALUE);
+
+        var nsaId = UUID.fromString(request.getApplicationId());
+        var nsa = nsaRepository.findOneById(nsaId)
+                .orElseThrow(() -> new ObjectNotFoundException("Application not found"));
+        if (request.getIsApproved()) {
+            nsa.setStatus(APPROVED_VALUE);
+            var applicationType = ApplicationType.forNumber(nsa.getType());
+            assert applicationType != null;
+            nsa.setLeaseCode(
+                    codeGeneratorRepository.generateLeaseCode(nsa.getMarketType()));
+            nsa.setLeaseStatus(LeaseStatus.ACTIVE_VALUE);
+
+            // Note: at the time this code block is written, only NSA supported
+            // In the future, when renewal application is supported, the lease start date might greater than approved date
+            var now = TimestampUtil.now();
+            var leaseStartDate = leaseUtil.asLeaseStartDate(now);
+            var leaseEndDate = leaseUtil.calcLeaseEndDate(leaseStartDate, nsa.getStallType());
+
+            nsa.setLeaseStartDate(leaseStartDate);
+            nsa.setLeaseEndDate(leaseEndDate);
+            if (nsa.getApprovedDate() == null) {
+                nsa.setApprovedDate(leaseStartDate);
+            }
+            nsa.setPaymentStatus(PaymentStatus.P_PAID_VALUE);
+
+            leaseKafkaProducer.notifyLeaseBeingApproved(nsa);
+        } else {
+            nsa.setStatus(DISAPPROVED_VALUE);
+        }
+        nsa.setCancelReason(request.getComment());
         applicationRepository.save(nsa);
 
         return NoContentResponse.newBuilder()

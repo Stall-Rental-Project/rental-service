@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.io.NumberInput;
 import com.srs.common.util.NumericUtil;
 import com.srs.market.MarketClass;
 import com.srs.market.StallClass;
+import com.srs.market.StallType;
 import com.srs.rental.*;
 import com.srs.rental.grpc.mapper.RateGrpcMapper;
 import com.srs.rental.repository.RateDslRepository;
@@ -91,6 +92,47 @@ public class RateUtil {
         var grpcRate = rateGrpcMapper.entityToGrpcResponse(rate);
 
         return NumericUtil.sanitize(grpcRate.getOtherRate().getAmount());
+    }
+    public double getSecurityRate(double monthlyRate, StallType stallType) {
+        if (!StallType.STALL_TYPE_PERMANENT.equals(stallType)) {
+            return 0;
+        }
+
+        var rate = rateRepository.findInUseRateByType(RateType.STALL_SECURITY_BOND_VALUE).orElse(null);
+
+        if (rate == null) {
+            log.warn("Stall security bond not found. It might be inactive or unapproved");
+            return 0;
+        }
+
+        var grpcRate = rateGrpcMapper.entityToGrpcResponse(rate);
+
+        double calculatedRate = monthlyRate * grpcRate.getSecurityBond().getRentalFee();
+        double minimumRate = grpcRate.getSecurityBond().getAmount();
+
+        return NumericUtil.sanitize(Math.max(calculatedRate, minimumRate));
+    }
+    public double getTotalAmountDue(double securityRate, MarketClass marketClass, StallType stallType) {
+        if (!StallType.STALL_TYPE_PERMANENT.equals(stallType)) {
+            return 0;
+        }
+
+        var rate = rateRepository.findInUseRateByType(RateType.STALL_RIGHTS_RATE_VALUE).orElse(null);
+
+        if (rate == null) {
+            log.warn("Stall security bond not found. It might be inactive or unapproved");
+            return securityRate;
+        }
+
+        var grpcRate = rateGrpcMapper.entityToGrpcResponse(rate);
+
+        var rightsRate = grpcRate.getRightsRate().getClassRightsAmountsList().stream()
+                .filter(item -> item.getClazz().equals(marketClass))
+                .map(ClassAmountRate::getAmount)
+                .mapToDouble(amount -> amount)
+                .sum();
+
+        return NumericUtil.sanitize(securityRate + rightsRate);
     }
 
     public double getMonthlyRate(MarketClass marketClass, StallClass stallClass, double stallArea) {
