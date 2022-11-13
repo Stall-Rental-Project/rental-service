@@ -17,5 +17,6 @@ public interface NSAGrpcService {
     GetApplicationResponse updateApplication(SubmitApplicationRequest request, GrpcPrincipal principal);
 
     BooleanResponse checkExistApplication(CheckExistApplicationRequest request);
+    NoContentResponse submitPayment(SubmitApplicationPaymentRequest request, GrpcPrincipal principal);
 
 }

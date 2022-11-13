@@ -1,7 +1,7 @@
 package com.srs.rental.grpc.service.impl;
 
-import com.srs.common.*;
 import com.srs.common.Error;
+import com.srs.common.*;
 import com.srs.common.exception.AccessDeniedException;
 import com.srs.common.exception.ObjectNotFoundException;
 import com.srs.common.util.PermissionUtil;
@@ -10,7 +10,10 @@ import com.srs.rental.*;
 import com.srs.rental.entity.ApplicationEntity;
 import com.srs.rental.grpc.mapper.ApplicationGrpcMapper;
 import com.srs.rental.grpc.service.NSAGrpcService;
-import com.srs.rental.repository.*;
+import com.srs.rental.repository.ApplicationRepository;
+import com.srs.rental.repository.MemberRepository;
+import com.srs.rental.repository.NSARepository;
+import com.srs.rental.repository.UserRepository;
 import com.srs.rental.repository.sequence.CodeGeneratorRepository;
 import com.srs.rental.util.validator.ApplicationValidator;
 import lombok.RequiredArgsConstructor;
@@ -74,13 +77,13 @@ public class NSAGrpcServiceImpl implements NSAGrpcService {
                 .orElseThrow(() -> new ObjectNotFoundException("Application not found"));
 
         if (PermissionUtil.isPublicUser(principal.getRoles()) &&
-                !List.of(NEW_VALUE, IN_PROGRESS_VALUE, ADDITIONAL_INFO_REQUESTED_VALUE).contains(application.getStatus())) {
+                !List.of(NEW_VALUE, IN_PROGRESS_VALUE).contains(application.getStatus())) {
             throw new AccessDeniedException("Application is being processed");
         }
 
         this.updateApplicationDocs(application, request);
 
-        application.setStatus(request.getDraft() ? IN_PROGRESS_VALUE : NEW_VALUE);
+        application.setStatus(request.getDraft() ? IN_PROGRESS_VALUE : PAYMENT_INFO_REQUESTED_VALUE);
 
         nsaRepository.save(application);
 
@@ -114,7 +117,7 @@ public class NSAGrpcServiceImpl implements NSAGrpcService {
                     .orElseThrow(() -> new ObjectNotFoundException("Application not found"));
 
             if (PermissionUtil.isPublicUser(principal.getRoles()) &&
-                    !List.of(NEW_VALUE, IN_PROGRESS_VALUE, ADDITIONAL_INFO_REQUESTED_VALUE).contains(application.getStatus())) {
+                    !List.of(NEW_VALUE, IN_PROGRESS_VALUE).contains(application.getStatus())) {
                 throw new AccessDeniedException("Application is being processed");
             }
 
@@ -166,6 +169,43 @@ public class NSAGrpcServiceImpl implements NSAGrpcService {
                     .build());
         }
         return builder.build();
+    }
+
+    @Override
+    @Transactional
+    public NoContentResponse submitPayment(SubmitApplicationPaymentRequest request, GrpcPrincipal principal) {
+        var acceptStatus = List.of(NEW_VALUE, IN_PROGRESS_VALUE, PAYMENT_INFO_REQUESTED_VALUE);
+
+        var nsaId = UUID.fromString(request.getApplicationId());
+        var nsa = nsaRepository.findOneById(nsaId)
+                .orElseThrow(() -> new ObjectNotFoundException("Application not found"));
+
+        var currentStatus = nsa.getStatus();
+
+        if (PermissionUtil.isPublicUser(principal.getRoles()) &&
+                !acceptStatus.contains(nsa.getStatus())) {
+            throw new AccessDeniedException("Application is being processed");
+        }
+
+        boolean hasChanged = this.updateApplicationPayment(nsa, request);
+
+        if (StringUtils.isBlank(nsa.getCreatedBy().toString()) && PermissionUtil.isPublicUser(principal.getRoles())) {
+            nsa.setCreatedBy(principal.getUserId());
+        }
+
+        if (!request.getDraft()) {
+            nsa.setStatus(FOR_PAYMENT_VERIFICATION_VALUE);
+
+        } else {
+            nsa.setStatus(IN_PROGRESS_VALUE);
+
+        }
+
+        applicationRepository.save(nsa);
+
+        return NoContentResponse.newBuilder()
+                .setSuccess(true)
+                .build();
     }
 
     private UUID storeNSA(SubmitApplicationRequest request, GrpcPrincipal principal) {
@@ -231,6 +271,22 @@ public class NSAGrpcServiceImpl implements NSAGrpcService {
             application.setIdentification(request.getIdentification());
             hasChanged = true;
         }
+        return hasChanged;
+    }
+
+    private boolean updateApplicationPayment(ApplicationEntity application, SubmitApplicationPaymentRequest request) {
+        boolean hasChanged = false;
+
+        if (!Objects.equals(application.getPaymentMethod(), request.getPaymentMethodValue())) {
+            application.setPaymentMethod(request.getPaymentMethodValue());
+            hasChanged = true;
+        }
+
+        if (StringUtils.isNotBlank(request.getProofOfTransfer()) && !Objects.equals(application.getProofOfTransfer(), request.getProofOfTransfer())) {
+            application.setProofOfTransfer(request.getProofOfTransfer());
+            hasChanged = true;
+        }
+
         return hasChanged;
     }
 }

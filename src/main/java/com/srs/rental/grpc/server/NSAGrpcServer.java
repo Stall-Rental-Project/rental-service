@@ -101,4 +101,20 @@ public class NSAGrpcServer extends NSAServiceGrpc.NSAServiceImplBase {
             throw e;
         }
     }
+
+    @Override
+    public void submitApplicationPayment(SubmitApplicationPaymentRequest request, StreamObserver<NoContentResponse> responseObserver) {
+        try {
+            var user = GrpcPrincipalProvider.getGrpcPrincipal();
+            var response = nsaGrpcService.submitPayment(request, user);
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+        } catch (Exception e) {
+            responseObserver.onNext(NoContentResponse.newBuilder()
+                    .setSuccess(false)
+                    .setError(GrpcExceptionUtil.asGrpcError(e))
+                    .build());
+            responseObserver.onCompleted();
+            throw e;
+        }    }
 }

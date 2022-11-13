@@ -156,7 +156,7 @@ public class ApplicationGrpcMapper {
 
 
                 .setType(ApplicationType.forNumber(entity.getType()))
-                .setStatus(entity.getStatus())
+                .setStatusValue(entity.getStatus())
 
                 .setCreatedAt(TimestampUtil.stringifyDatetime(entity.getCreatedAt(),true))
                 .setCreatedBy(entity.getCreatedBy().toString())

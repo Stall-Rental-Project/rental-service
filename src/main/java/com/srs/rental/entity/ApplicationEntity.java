@@ -89,11 +89,14 @@ public class ApplicationEntity {
 
     private int paymentStatus;
     private double paidInitialFee; // Set right after step 3: NSA
+    private double paidSecurityFee; // Set right after step 5: NSA
+    private double paidTotalAmountDue; // Set right after step 5: NSA
 
     private OffsetDateTime approvedDate;
 
     private OffsetDateTime datePaid;
 
+    private String cancelReason;
 
     @PreUpdate
     public void preUpdate() {
