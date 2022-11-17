@@ -99,4 +99,19 @@ public class RateGrpcServer extends RateServiceGrpc.RateServiceImplBase {
             throw e;
         }    }
 
+    @Override
+    public void calculateRates(CalculateRateRequest request, StreamObserver<CalculateRateResponse> responseObserver) {
+        try {
+            var principal = GrpcPrincipalProvider.getGrpcPrincipal();
+            responseObserver.onNext(rateGrpcService.calculateApplicationRate(request, principal));
+            responseObserver.onCompleted();
+        } catch (Exception e) {
+            responseObserver.onNext(CalculateRateResponse.newBuilder()
+                    .setSuccess(false)
+                    .setError(GrpcExceptionUtil.asGrpcError(e))
+                    .build());
+            responseObserver.onCompleted();
+            throw e;
+        }
+    }
 }

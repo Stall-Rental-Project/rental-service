@@ -9,16 +9,19 @@ import com.srs.common.exception.ObjectNotFoundException;
 import com.srs.proto.dto.GrpcPrincipal;
 import com.srs.rental.*;
 import com.srs.rental.common.Constant;
+import com.srs.rental.entity.ApplicationEntity;
 import com.srs.rental.entity.RateEntity;
 import com.srs.rental.grpc.mapper.RateGrpcMapper;
 import com.srs.rental.grpc.service.RateGrpcService;
 import com.srs.rental.grpc.util.PageUtil;
+import com.srs.rental.repository.ApplicationRepository;
 import com.srs.rental.repository.RateDslRepository;
 import com.srs.rental.repository.RateRepository;
 import com.srs.rental.util.RateUtil;
 import com.srs.rental.util.validator.RateValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,7 +35,7 @@ import java.util.UUID;
 public class RateGrpcServiceImpl implements RateGrpcService {
     private final RateRepository rateRepository;
     private final RateDslRepository rateDslRepository;
-
+private final ApplicationRepository applicationRepository;
     private final RateGrpcMapper rateGrpcMapper;
     private final RateValidator rateValidator;
 
@@ -186,5 +189,64 @@ public class RateGrpcServiceImpl implements RateGrpcService {
         }
 
         return hasChanged;
+    }
+    @Override
+    public CalculateRateResponse calculateApplicationRate(CalculateRateRequest request, GrpcPrincipal principal) {
+        double initialFee = 0, securityFee = 0, monthlyRate = 0, totalAmountDue = 0;
+
+        ApplicationEntity application = null;
+
+        if (StringUtils.isNotBlank(request.getApplicationId())) {
+            var applicationId = UUID.fromString(request.getApplicationId());
+            application = applicationRepository.findById(applicationId)
+                    .orElseThrow(() -> new ObjectNotFoundException("Application not found"));
+        }
+
+        if (request.getIncludesList().contains(FeeType.NSA_INITIAL_FEE)) {
+            if (application != null) {
+                initialFee = application.getPaidInitialFee() > 0
+                        ? application.getPaidInitialFee()
+                        : rateUtil.getInitialRate(ApplicationType.forNumber(application.getType()));
+            } else {
+                initialFee = rateUtil.getInitialRate(request.getApplicationType());
+            }
+        }
+
+        if (request.getIncludesList().contains(FeeType.NSA_MONTHLY_FEE)
+                || request.getIncludesList().contains(FeeType.NSA_SECURITY_FEE)
+                || request.getIncludesList().contains(FeeType.NSA_TOTAL_AMOUNT_DUE)) {
+            monthlyRate = rateUtil.getMonthlyRate(request.getMarketClass(), request.getStallClass(), request.getStallArea());
+        }
+
+        if (request.getIncludesList().contains(FeeType.NSA_SECURITY_FEE)
+                || request.getIncludesList().contains(FeeType.NSA_TOTAL_AMOUNT_DUE)) {
+            if (application != null) {
+                securityFee = application.getPaidSecurityFee() > 0
+                        ? application.getPaidSecurityFee()
+                        : rateUtil.getSecurityRate(monthlyRate, request.getStallType());
+            } else {
+                securityFee = rateUtil.getSecurityRate(monthlyRate, request.getStallType());
+            }
+        }
+
+        if (request.getIncludesList().contains(FeeType.NSA_TOTAL_AMOUNT_DUE)) {
+            if (application != null) {
+                totalAmountDue = application.getPaidTotalAmountDue() > 0
+                        ? application.getPaidTotalAmountDue()
+                        : rateUtil.getTotalAmountDue(securityFee, request.getMarketClass(), request.getStallType());
+            } else {
+                totalAmountDue = rateUtil.getTotalAmountDue(securityFee, request.getMarketClass(), request.getStallType());
+            }
+        }
+
+        return CalculateRateResponse.newBuilder()
+                .setSuccess(true)
+                .setData(CalculateRateResponse.Data.newBuilder()
+                        .setInitialFee(initialFee)
+                        .setMonthlyFee(monthlyRate)
+                        .setSecurityFee(securityFee)
+                        .setTotalAmountDue(totalAmountDue)
+                        .build())
+                .build();
     }
 }

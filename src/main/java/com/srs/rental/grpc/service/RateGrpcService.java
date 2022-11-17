@@ -5,10 +5,7 @@ import com.srs.common.NoContentResponse;
 import com.srs.common.OnlyCodeResponse;
 import com.srs.common.PageResponse;
 import com.srs.proto.dto.GrpcPrincipal;
-import com.srs.rental.GetRateRequest;
-import com.srs.rental.GetRateResponse;
-import com.srs.rental.ListRatesRequest;
-import com.srs.rental.UpsertRateRequest;
+import com.srs.rental.*;
 
 public interface RateGrpcService {
     PageResponse listRates(ListRatesRequest request, GrpcPrincipal principal);
@@ -19,5 +16,6 @@ public interface RateGrpcService {
 
     OnlyCodeResponse updateRate(UpsertRateRequest request, GrpcPrincipal principal);
     NoContentResponse deleteRate(FindByIdRequest request, GrpcPrincipal principal);
+    CalculateRateResponse calculateApplicationRate(CalculateRateRequest request, GrpcPrincipal principal);
 
 }

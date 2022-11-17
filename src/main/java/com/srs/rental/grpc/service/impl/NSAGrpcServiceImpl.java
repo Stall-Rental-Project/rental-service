@@ -92,6 +92,11 @@ public class NSAGrpcServiceImpl implements NSAGrpcService {
             throw new AccessDeniedException("Application is being processed");
         }
 
+        if (!request.getDraft()) {
+            var now = TimestampUtil.now();
+            application.setRemindedPaymentDate(now.getDayOfMonth() >= 20 ? now.plusMonths(1).withDayOfMonth(20) : now.withDayOfMonth(20));
+        }
+
         this.updateApplicationDocs(application, request);
 
         application.setStatus(request.getDraft() ? IN_PROGRESS_VALUE : PAYMENT_INFO_REQUESTED_VALUE);

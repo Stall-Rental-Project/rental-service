@@ -195,6 +195,7 @@ public class ApplicationGrpcMapper {
 
                 .setApprovedDate(entity.getApprovedDate() != null ? entity.getApprovedDate().format(LEASE_DATE_FORMATTER) : "")
 
+                .setRemindedPaymentDate(TimestampUtil.stringifyDatetime(entity.getRemindedPaymentDate(),true))
 
                 .setOwner(this.entityToGrpcResponse(entity.getOwner()));
         if (fetchMembers) {

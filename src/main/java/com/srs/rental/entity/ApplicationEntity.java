@@ -95,6 +95,7 @@ public class ApplicationEntity {
     private OffsetDateTime approvedDate;
 
     private OffsetDateTime datePaid;
+    private OffsetDateTime remindedPaymentDate;
 
     private String cancelReason;
 
