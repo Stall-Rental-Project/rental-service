@@ -4,11 +4,14 @@ import com.querydsl.core.types.Order;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import com.srs.common.util.TimestampUtil;
+import com.srs.rental.TerminationStatus;
 import com.srs.rental.entity.LeaseTerminationEntity;
 import com.srs.rental.entity.QLeaseTerminationEntity;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -31,5 +34,14 @@ public class LeaseTerminationDslRepository {
                 .limit(1);
 
         return Optional.ofNullable(query.fetchFirst());
+    }
+    public List<LeaseTerminationEntity> findAllPendingTerminationRequests() {
+
+        JPAQuery<LeaseTerminationEntity> query = queryFactory.select(leaseTermination)
+                .from(leaseTermination)
+                .where(leaseTermination.status.eq(TerminationStatus.T_PENDING_VALUE))
+                .where(leaseTermination.endDate.lt(TimestampUtil.now()));
+
+        return query.fetch();
     }
 }
