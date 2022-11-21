@@ -19,7 +19,7 @@ public interface ApplicationRepository extends JpaRepository<ApplicationEntity, 
 
     @Query("SELECT a FROM ApplicationEntity a " +
             "WHERE a.applicationId = :id " +
-            "AND a.type in (0, 1, 2) " +
-            "AND a.status in (3, 5)")
+            "AND a.type in (0, 1) " +
+            "AND a.status in (4)")
     Optional<ApplicationEntity> findOneLeaseById(@Param("id") UUID applicationId);
 }

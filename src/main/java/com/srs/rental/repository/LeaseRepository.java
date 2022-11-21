@@ -17,22 +17,22 @@ public interface LeaseRepository extends JpaRepository<ApplicationEntity, UUID> 
     @Query("SELECT a FROM ApplicationEntity a " +
             "WHERE a.applicationId = :id " +
             "AND a.type in (0, 1, 2) " +
-            "AND a.status in (3, 5)")
+            "AND a.status in (4)")
     Optional<ApplicationEntity> findOneById(@Param("id") UUID applicationId);
 
     @Query("select a from ApplicationEntity a " +
             "where a.applicationId = :id " +
             "and a.leaseStatus = :status " +
             "AND a.type in (0, 1, 2) " +
-            "AND a.status in (3, 5)")
+            "AND a.status in (4)")
     Optional<ApplicationEntity> findOneByIdAndStatus(@Param("id") UUID applicationId, @Param("status") int leaseStatus);
 
     @Modifying
     @Query("update ApplicationEntity " +
             "set leaseStatus = :status " +
             "where applicationId in (:ids) " +
-            "and status in (3, 5) " +
-            "and type in (0, 1, 2)")
+            "and status in (4) " +
+            "and type in (0, 1)")
     void updateLeaseStatusInBatch(@Param("ids") Collection<UUID> applicationIds, @Param("status") int leaseStatus);
 
 }
