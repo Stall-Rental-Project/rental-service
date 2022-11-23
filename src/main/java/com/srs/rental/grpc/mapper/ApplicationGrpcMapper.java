@@ -247,6 +247,7 @@ public class ApplicationGrpcMapper {
                 .setEmail(entity.getEmail())
                 .setDistrict(requireNonNullElse(entity.getDistrict(), ""))
                 .setFullName(requireNonNullElse(entity.getFullName(), ""))
+                .setTelephone(requireNonNullElse(entity.getTelephone(),""))
                 .build();
     }
 
@@ -277,6 +278,7 @@ public class ApplicationGrpcMapper {
         user.setSex(response.getSex());
         user.setHouseNumber(response.getHouseNumber());
         user.setEmail(response.getEmail());
+        user.setTelephone(response.getTelephone());
     }
 
     public MemberEntity grpcRequestToEntity(Member request) {
