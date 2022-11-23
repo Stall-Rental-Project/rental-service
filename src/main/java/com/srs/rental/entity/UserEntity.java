@@ -7,6 +7,7 @@ import org.hibernate.annotations.GenericGenerator;
 import javax.persistence.*;
 import java.io.Serializable;
 import java.sql.Timestamp;
+import java.time.OffsetDateTime;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -42,7 +43,7 @@ public class UserEntity implements Serializable {
     private Integer maritalStatus;
 
     @Column(nullable = false)
-    private Timestamp dateOfBirth;
+    private OffsetDateTime dateOfBirth;
 
     @Column(nullable = false)
     private String placeOfBirth;
@@ -71,6 +72,8 @@ public class UserEntity implements Serializable {
     private String zipcode;
 
     private String district;
+
+    private String telephone;
 
     @Column(nullable = false)
     private Timestamp createdAt;

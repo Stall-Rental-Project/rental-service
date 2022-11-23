@@ -12,13 +12,11 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
-import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.Period;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -125,8 +123,9 @@ public class ApplicationGrpcMapper {
         user.setMaritalStatus(request.getMaritalStatus());
         user.setPlaceOfBirth(request.getPlaceOfBirth());
         user.setSex(request.getSex());
-        user.setDateOfBirth(StringUtils.isNotBlank(request.getDateOfBirth()) ?
-                new Timestamp(Long.parseLong(request.getDateOfBirth())) : null);
+        user.setDateOfBirth(StringUtils.isNotBlank(request.getDateOfBirth())
+                ? TimestampUtil.parseDatetimeString(request.getDateOfBirth())
+                : TimestampUtil.now());
         user.setHouseNumber(request.getHouseNumber());
         user.setStreet(request.getStreet());
         user.setProvince(request.getProvince());
@@ -135,6 +134,7 @@ public class ApplicationGrpcMapper {
         user.setWard(request.getWard());
         user.setEmail(request.getEmail().trim());
         user.setDistrict(request.getDistrict());
+        user.setTelephone(request.getTelephone());
         return user;
     }
 
@@ -158,7 +158,7 @@ public class ApplicationGrpcMapper {
                 .setType(ApplicationType.forNumber(entity.getType()))
                 .setStatusValue(entity.getStatus())
 
-                .setCreatedAt(TimestampUtil.stringifyDatetime(entity.getCreatedAt(),true))
+                .setCreatedAt(TimestampUtil.stringifyDatetime(entity.getCreatedAt(), true))
                 .setCreatedBy(entity.getCreatedBy().toString())
 
                 .setOwnedAnyStall(entity.isOwnedAnyStall())
@@ -195,7 +195,7 @@ public class ApplicationGrpcMapper {
 
                 .setApprovedDate(entity.getApprovedDate() != null ? entity.getApprovedDate().format(LEASE_DATE_FORMATTER) : "")
 
-                .setRemindedPaymentDate(TimestampUtil.stringifyDatetime(entity.getRemindedPaymentDate(),true))
+                .setRemindedPaymentDate(TimestampUtil.stringifyDatetime(entity.getRemindedPaymentDate(), true))
 
                 .setOwner(this.entityToGrpcResponse(entity.getOwner()));
         if (fetchMembers) {
@@ -223,9 +223,8 @@ public class ApplicationGrpcMapper {
         var dateS = "";
         var age = 0;
         if (entity.getDateOfBirth() != null) {
-            var date = new Date(entity.getDateOfBirth().getTime());
-            dateS = String.valueOf(date.getTime());
-            age = Period.between(entity.getDateOfBirth().toLocalDateTime().toLocalDate(), LocalDate.now()).getYears();
+            dateS = TimestampUtil.stringifyDatetime(entity.getDateOfBirth(), true);
+            age = Period.between(LocalDate.from(entity.getDateOfBirth()), LocalDate.now()).getYears();
         }
         return ApplicationOwner.newBuilder()
                 .setUserId(entity.getUserId().toString())
@@ -247,6 +246,7 @@ public class ApplicationGrpcMapper {
                 .setZipcode(requireNonNullElse(entity.getZipcode(), ""))
                 .setEmail(entity.getEmail())
                 .setDistrict(requireNonNullElse(entity.getDistrict(), ""))
+                .setFullName(requireNonNullElse(entity.getFullName(), ""))
                 .build();
     }
 
@@ -267,8 +267,8 @@ public class ApplicationGrpcMapper {
         user.setFartherName(response.getFartherName());
         user.setMotherName(response.getMotherName());
         user.setDateOfBirth(StringUtils.isNotBlank(response.getDateOfBirth())
-                ? new Timestamp(Long.parseLong(response.getDateOfBirth()))
-                : new Timestamp(System.currentTimeMillis()));
+                ? TimestampUtil.parseDatetimeString(response.getDateOfBirth())
+                : TimestampUtil.now());
         user.setProvince(response.getProvince());
         user.setZipcode(response.getZipcode());
         user.setStreet(response.getStreet());
