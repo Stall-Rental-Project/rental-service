@@ -2,6 +2,7 @@ package com.srs.rental.grpc.service.impl;
 
 import com.google.common.collect.Lists;
 import com.google.protobuf.Any;
+import com.srs.common.FindByIdRequest;
 import com.srs.common.NoContentResponse;
 import com.srs.common.PageResponse;
 import com.srs.common.exception.ObjectNotFoundException;
@@ -9,7 +10,6 @@ import com.srs.market.MarketClass;
 import com.srs.market.StallClass;
 import com.srs.proto.dto.GrpcPrincipal;
 import com.srs.rental.Application;
-import com.srs.rental.CancelApplicationRequest;
 import com.srs.rental.ListApplicationRequest;
 import com.srs.rental.WorkflowStatus;
 import com.srs.rental.common.Constant;
@@ -98,11 +98,12 @@ public class ApplicationGrpcServiceImpl implements ApplicationGrpcService {
                                 .map(Any::pack)
                                 .collect(Collectors.toList()))
                         .build())
-                .build();    }
+                .build();
+    }
 
     @Override
-    public NoContentResponse cancelApplication(CancelApplicationRequest request, GrpcPrincipal principal) {
-        var applicationId = UUID.fromString(request.getApplicationId());
+    public NoContentResponse cancelApplication(FindByIdRequest request, GrpcPrincipal principal) {
+        var applicationId = UUID.fromString(request.getId());
 
         var application = applicationRepository.findById(applicationId)
                 .orElseThrow(() -> new ObjectNotFoundException("Application not found"));
@@ -112,7 +113,6 @@ public class ApplicationGrpcServiceImpl implements ApplicationGrpcService {
         }
 
         application.setStatus(WorkflowStatus.CANCELLED_VALUE);
-        application.setCancelReason(request.getCancelReason());
 
         transactionTemplate.executeWithoutResult(transaction -> {
             applicationRepository.save(application);

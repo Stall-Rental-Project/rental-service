@@ -1,12 +1,12 @@
 package com.srs.rental.grpc.server;
 
+import com.srs.common.FindByIdRequest;
 import com.srs.common.NoContentResponse;
 import com.srs.common.PageResponse;
 import com.srs.proto.intercepter.AuthGrpcInterceptor;
 import com.srs.proto.provider.GrpcPrincipalProvider;
 import com.srs.proto.util.GrpcExceptionUtil;
 import com.srs.rental.ApplicationServiceGrpc;
-import com.srs.rental.CancelApplicationRequest;
 import com.srs.rental.ListApplicationRequest;
 import com.srs.rental.grpc.service.ApplicationGrpcService;
 import io.grpc.stub.StreamObserver;
@@ -36,7 +36,7 @@ public class ApplicationGrpcServer extends ApplicationServiceGrpc.ApplicationSer
     }
 
     @Override
-    public void cancelApplication(CancelApplicationRequest request, StreamObserver<NoContentResponse> responseObserver) {
+    public void cancelApplication(FindByIdRequest request, StreamObserver<NoContentResponse> responseObserver) {
         try {
             var principal = GrpcPrincipalProvider.getGrpcPrincipal();
             responseObserver.onNext(applicationGrpcService.cancelApplication(request, principal));
