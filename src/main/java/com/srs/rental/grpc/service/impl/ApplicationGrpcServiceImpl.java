@@ -2,12 +2,16 @@ package com.srs.rental.grpc.service.impl;
 
 import com.google.common.collect.Lists;
 import com.google.protobuf.Any;
+import com.srs.common.NoContentResponse;
 import com.srs.common.PageResponse;
+import com.srs.common.exception.ObjectNotFoundException;
 import com.srs.market.MarketClass;
 import com.srs.market.StallClass;
 import com.srs.proto.dto.GrpcPrincipal;
 import com.srs.rental.Application;
+import com.srs.rental.CancelApplicationRequest;
 import com.srs.rental.ListApplicationRequest;
+import com.srs.rental.WorkflowStatus;
 import com.srs.rental.common.Constant;
 import com.srs.rental.grpc.mapper.ApplicationGrpcMapper;
 import com.srs.rental.grpc.service.ApplicationGrpcService;
@@ -95,4 +99,28 @@ public class ApplicationGrpcServiceImpl implements ApplicationGrpcService {
                                 .collect(Collectors.toList()))
                         .build())
                 .build();    }
+
+    @Override
+    public NoContentResponse cancelApplication(CancelApplicationRequest request, GrpcPrincipal principal) {
+        var applicationId = UUID.fromString(request.getApplicationId());
+
+        var application = applicationRepository.findById(applicationId)
+                .orElseThrow(() -> new ObjectNotFoundException("Application not found"));
+
+        if (List.of(WorkflowStatus.APPROVED_VALUE).contains(application.getStatus())) {
+            throw new IllegalArgumentException("Cannot cancel approved application");
+        }
+
+        application.setStatus(WorkflowStatus.CANCELLED_VALUE);
+        application.setCancelReason(request.getCancelReason());
+
+        transactionTemplate.executeWithoutResult(transaction -> {
+            applicationRepository.save(application);
+            transaction.flush();
+        });
+
+        return NoContentResponse.newBuilder()
+                .setSuccess(true)
+                .build();
+    }
 }

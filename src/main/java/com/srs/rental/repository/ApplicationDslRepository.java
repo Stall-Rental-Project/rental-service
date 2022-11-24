@@ -21,19 +21,17 @@ import com.srs.rental.grpc.util.PageUtil;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Repository;
-import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
 import static com.srs.common.Status.ACTIVE_VALUE;
+import static com.srs.common.Status.INACTIVE_VALUE;
 import static com.srs.rental.ApplicationType.NEW_STALL_APP_VALUE;
 import static com.srs.rental.ApplicationType.RENEWAL_STALL_APP_VALUE;
 import static com.srs.rental.LeaseStatus.FOR_TERMINATION_VALUE;
 import static com.srs.rental.LeaseStatus.TERMINATED_VALUE;
 import static com.srs.rental.WorkflowStatus.APPROVED_VALUE;
+import static com.srs.rental.WorkflowStatus.CANCELLED_VALUE;
 
 @Repository
 @RequiredArgsConstructor
@@ -60,6 +58,9 @@ public class ApplicationDslRepository {
             baseQuery.where(owner.lastName.containsIgnoreCase(request.getLastName()));
         }
 
+        baseQuery.where(application.status.notIn(
+                CANCELLED_VALUE));
+
         this.addAssignmentFilter(principal, baseQuery);
 
         var pageRequest = PageUtil.normalizeRequest(request.getPageRequest(), Constant.APPLICATION_SORTS);
@@ -73,6 +74,7 @@ public class ApplicationDslRepository {
 
         return Page.from(selectQuery.fetch(), countQuery.fetchFirst());
     }
+
     public Page<ApplicationEntity> findAllLeases(ListLeasesRequest request, GrpcPrincipal principal) {
         var pageRequest = PageUtil.normalizeRequest(request.getPageRequest(), Constant.LEASE_SORTS);
 
@@ -120,6 +122,11 @@ public class ApplicationDslRepository {
             }
 
             baseQuery.where(Expressions.anyOf(leaseStatusFilters.toArray(new BooleanExpression[0])));
+        } else {
+            baseQuery.where(application.leaseStatus.in(
+                    ACTIVE_VALUE,
+                    FOR_TERMINATION_VALUE,
+                    TERMINATED_VALUE,INACTIVE_VALUE));
         }
 
         addAssignmentFilter(principal, baseQuery);
