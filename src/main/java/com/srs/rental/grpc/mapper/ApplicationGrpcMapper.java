@@ -1,6 +1,7 @@
 package com.srs.rental.grpc.mapper;
 
 import com.srs.common.util.TimestampUtil;
+import com.srs.market.StallType;
 import com.srs.proto.dto.GrpcPrincipal;
 import com.srs.rental.*;
 import com.srs.rental.entity.ApplicationEntity;
@@ -18,6 +19,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static com.srs.rental.WorkflowStatus.IN_PROGRESS_VALUE;
@@ -208,7 +210,7 @@ public class ApplicationGrpcMapper {
     }
 
     public Application entityToGrpcResponse(ApplicationEntity entity) {
-        return entityToGrpcBuilder(entity, true).build();
+        return entityToGrpcBuilder(entity, false).build();
     }
 
     public Application entityToGrpcResponse(ApplicationEntity entity, boolean fetchMembers) {
@@ -289,38 +291,37 @@ public class ApplicationGrpcMapper {
 
 
     public Application.Builder buildGrpcApplicationResponse(ApplicationEntity application) {
-        var grpcApplication = this.entityToGrpcBuilder(application, false);
+        var grpcApplication = this.entityToGrpcBuilder(application, true);
 
         // application fee is not apply for this application
-
 
         if (grpcApplication.getInitialFee() == 0) {
             grpcApplication.setInitialFee(rateUtil.getInitialRate(grpcApplication.getType()));
         }
 
-//        if (StallType.STALL_TYPE_TEMPORARY.equals(grpcApplication.getStallType())) {
-//            grpcApplication.setSecurityFee(0)
-//                    .setTotalAmountDue(0);
-//        } else {
-//            if (grpcApplication.getSecurityFee() == 0) {
-//                var monthlyFee = rateUtil.getMonthlyRate(grpcApplication.getMarketClass(), grpcApplication.getStallClass(), UUID.fromString(grpcApplication.getSectionId()), grpcApplication.getStallArea());
-//                var securityFee = rateUtil.getSecurityRate(monthlyFee, grpcApplication.getStallType());
-//
-//                grpcApplication.setSecurityFee(securityFee);
-//
-//                if (grpcApplication.getTotalAmountDue() == 0) {
-//                    var totalAmountDue = rateUtil.getTotalAmountDue(securityFee, grpcApplication.getMarketClass(), grpcApplication.getStallType());
-//                    grpcApplication.setTotalAmountDue(totalAmountDue);
-//                }
-//            } // else, it already set in entityToGrpcBuilder()
-//        }
+        if (StallType.STALL_TYPE_TEMPORARY.equals(grpcApplication.getStallType())) {
+            grpcApplication.setSecurityFee(0)
+                    .setTotalAmountDue(0);
+        } else {
+            if (grpcApplication.getSecurityFee() == 0) {
+                var monthlyFee = rateUtil.getMonthlyRate(grpcApplication.getMarketClass(), grpcApplication.getStallClass(), grpcApplication.getStallArea());
+                var securityFee = rateUtil.getSecurityRate(monthlyFee, grpcApplication.getStallType());
+
+                grpcApplication.setSecurityFee(securityFee);
+
+                if (grpcApplication.getTotalAmountDue() == 0) {
+                    var totalAmountDue = rateUtil.getTotalAmountDue(securityFee, grpcApplication.getMarketClass(), grpcApplication.getStallType());
+                    grpcApplication.setTotalAmountDue(totalAmountDue);
+                }
+            } // else, it already set in entityToGrpcBuilder()
+        }
 
         // We must re-fetch these entities here due to application's code is generated via SQL trigger instead of directly in business code
-        var members = memberRepository.findAllByApplicationId(application.getApplicationId());
-
-        grpcApplication.addAllMembers(members.stream()
-                .map(this::entityToGrpcResponse)
-                .collect(Collectors.toList()));
+//        var members = memberRepository.findAllByApplicationId(application.getApplicationId());
+//
+//        grpcApplication.addAllMembers(members.stream()
+//                .map(this::entityToGrpcResponse)
+//                .collect(Collectors.toList()));
 
         return grpcApplication;
     }

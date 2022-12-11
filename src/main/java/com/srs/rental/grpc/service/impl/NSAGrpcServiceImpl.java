@@ -129,7 +129,7 @@ public class NSAGrpcServiceImpl implements NSAGrpcService {
     public GetApplicationResponse updateApplication(SubmitApplicationRequest request, GrpcPrincipal principal) {
         try {
             var applicationId = UUID.fromString(request.getApplicationId());
-            var application = nsaRepository.findById(applicationId)
+            var application = nsaRepository.findOneById(applicationId)
                     .orElseThrow(() -> new ObjectNotFoundException("Application not found"));
 
             if (PermissionUtil.isPublicUser(principal.getRoles()) &&

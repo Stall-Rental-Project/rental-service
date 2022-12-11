@@ -12,6 +12,7 @@ import java.util.UUID;
 @Repository
 public interface NSARepository extends JpaRepository<ApplicationEntity, UUID> {
     @Query("select a from ApplicationEntity a " +
+            "left join fetch a.members " +
             "where a.applicationId = :id " +
             "and a.type = 0")
     Optional<ApplicationEntity> findOneById(@Param("id") UUID id);

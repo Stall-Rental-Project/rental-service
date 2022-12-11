@@ -1,5 +1,6 @@
 package com.srs.rental.repository;
 
+import com.banvien.emarket.rental.GetRevenueAnalyticsRequest;
 import com.querydsl.core.types.Order;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.BooleanExpression;
@@ -23,6 +24,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
+import java.util.Objects;
 
 import static com.srs.common.Status.ACTIVE_VALUE;
 import static com.srs.common.Status.INACTIVE_VALUE;
@@ -153,13 +155,31 @@ public class ApplicationDslRepository {
         if (PermissionUtil.isPublicUser(principal.getRoles())) {
             baseQuery.where(application.createdBy.eq(principal.getUserId())
                     .or(owner.email.equalsIgnoreCase(principal.getEmail().trim())));
-        } else {
-
-            if (principal.getMarketCodes() != null && principal.getMarketCodes().stream().anyMatch(StringUtils::isNotBlank)) {
-                baseQuery.where(application.marketCode.in(principal.getMarketCodes()));
-            }
         }
     }
 
+//    public double countAllForApplicationFeeRevenueAnalytics(GetRevenueAnalyticsRequest request) {
+//
+//        var query = queryFactory.select(application.paidInitialFee.sum())
+//                .from(application)
+//                .where(application.type.in(NEW_STALL_APP_VALUE));
+//
+//        query.where(application.approvedDate.year().lt(request.getYear()));
+//
+//        var applicationFee = Objects.requireNonNullElse(query.fetchFirst(), 0.0);
+//
+//        var securityQuery = queryFactory.select(application.paidTotalAmountDue.sum())
+//                .from(application)
+//                .where(application.orNumber.isNotNull())
+//                .where(application.orNumber.isNotEmpty())
+//                .where(application.type.in(NEW_STALL_APP_VALUE))
+//                .where(application.stallType.in(StallType.STALL_TYPE_PERMANENT_VALUE));
+//
+//        securityQuery.where(application.securityBondAndStallRightsPaidDate.between(dateRange.getFrom(), dateRange.getTo()));
+//
+//        var securityFee = Objects.requireNonNullElse(securityQuery.fetchFirst(), 0.0);
+//
+//        return applicationFee + securityFee;
+//    }
 
 }
