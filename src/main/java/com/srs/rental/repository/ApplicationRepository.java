@@ -18,6 +18,7 @@ public interface ApplicationRepository extends JpaRepository<ApplicationEntity, 
     boolean existsByMarketCode(String marketCode);
 
     @Query("SELECT a FROM ApplicationEntity a " +
+            "left join fetch a.members " +
             "WHERE a.applicationId = :id " +
             "AND a.type in (0, 1) " +
             "AND a.status in (4)")
