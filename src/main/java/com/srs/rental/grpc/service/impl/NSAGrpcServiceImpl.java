@@ -87,10 +87,10 @@ public class NSAGrpcServiceImpl implements NSAGrpcService {
         var application = nsaRepository.findById(applicationId)
                 .orElseThrow(() -> new ObjectNotFoundException("Application not found"));
 
-        if (PermissionUtil.isPublicUser(principal.getRoles()) &&
-                !List.of(NEW_VALUE, IN_PROGRESS_VALUE).contains(application.getStatus())) {
-            throw new AccessDeniedException("Application is being processed");
-        }
+//        if (PermissionUtil.isPublicUser(principal.getRoles()) &&
+//                !List.of(NEW_VALUE, IN_PROGRESS_VALUE).contains(application.getStatus())) {
+//            throw new AccessDeniedException("Application is being processed");
+//        }
 
         if (!request.getDraft()) {
             var now = TimestampUtil.now();
