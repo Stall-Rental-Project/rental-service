@@ -14,6 +14,7 @@ import com.srs.rental.*;
 import com.srs.rental.entity.ApplicationEntity;
 import com.srs.rental.grpc.mapper.ApplicationGrpcMapper;
 import com.srs.rental.grpc.service.NSAGrpcService;
+import com.srs.rental.kafka.producer.EmailKafkaProducer;
 import com.srs.rental.kafka.producer.LeaseKafkaProducer;
 import com.srs.rental.repository.ApplicationRepository;
 import com.srs.rental.repository.MemberRepository;
@@ -50,6 +51,8 @@ public class NSAGrpcServiceImpl implements NSAGrpcService {
     private final ApplicationGrpcMapper applicationGrpcMapper;
     private final LeaseUtil leaseUtil;
     private final RateUtil rateUtil;
+
+    private final EmailKafkaProducer emailKafkaProducer;
 
     private final LeaseKafkaProducer leaseKafkaProducer;
 
@@ -270,6 +273,10 @@ public class NSAGrpcServiceImpl implements NSAGrpcService {
             nsa.setPaymentStatus(PaymentStatus.P_PAID_VALUE);
 
             leaseKafkaProducer.notifyLeaseBeingApproved(nsa);
+
+            emailKafkaProducer.sendPaymentInformationRequestedEmail(nsa,
+                    "");
+
         } else {
             nsa.setStatus(DISAPPROVED_VALUE);
         }
